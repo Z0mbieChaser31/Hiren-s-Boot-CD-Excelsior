@@ -1,0 +1,388 @@
+{
+  "project": "Hiren's Boot CD Excelsior",
+  "version": "1.0.0",
+  "updated": "2026-07-23",
+  "description": "Complete catalog of tools included in the Excelsior rescue environment",
+  "tools": [
+    {
+      "name": "testdisk",
+      "version": "7.2",
+      "category": "recovery",
+      "description": "Recovers lost partitions and fixes boot sectors for FAT, NTFS, ext2/3/4, and more",
+      "url": "https://www.cgsecurity.org/wiki/TestDisk",
+      "license": "GPL-2.0",
+      "package": "testdisk",
+      "replaces": "GetDataBack, Partition Table Doctor"
+    },
+    {
+      "name": "photorec",
+      "version": "7.2",
+      "category": "recovery",
+      "description": "File carving tool — recovers photos, documents, video from damaged/formatted media",
+      "url": "https://www.cgsecurity.org/wiki/PhotoRec",
+      "license": "GPL-2.0",
+      "package": "testdisk",
+      "replaces": "Recuva, PC Inspector File Recovery"
+    },
+    {
+      "name": "ddrescue",
+      "version": "1.28",
+      "category": "recovery",
+      "description": "Forensic disk copying — maps and works around bad sectors",
+      "url": "https://www.gnu.org/software/ddrescue/",
+      "license": "GPL-2.0",
+      "package": "ddrescue",
+      "replaces": "HDD Regenerator"
+    },
+    {
+      "name": "extundelete",
+      "version": "0.2.4",
+      "category": "recovery",
+      "description": "Recovers deleted files from ext3/ext4 filesystems",
+      "url": "http://extundelete.sourceforge.net/",
+      "license": "GPL-2.0",
+      "package": "extundelete",
+      "replaces": "Recuva (ext3/4 variant)"
+    },
+    {
+      "name": "gparted",
+      "version": "1.6.0",
+      "category": "disk",
+      "description": "Graphical partition editor — resize, create, delete, move, copy partitions",
+      "url": "https://gparted.org/",
+      "license": "GPL-2.0",
+      "package": "gparted",
+      "replaces": "Partition Magic, Acronis Disk Director"
+    },
+    {
+      "name": "parted",
+      "version": "3.6",
+      "category": "disk",
+      "description": "GNU Parted — CLI partition manipulation supporting MBR and GPT",
+      "url": "https://www.gnu.org/software/parted/",
+      "license": "GPL-3.0",
+      "package": "parted",
+      "replaces": "fdisk (GPT support)"
+    },
+    {
+      "name": "gdisk",
+      "version": "1.0.9",
+      "category": "disk",
+      "description": "GPT fdisk — partitioning tool specifically for GPT disks",
+      "url": "https://www.rodsbooks.com/gdisk/",
+      "license": "GPL-2.0",
+      "package": "gptfdisk",
+      "replaces": "fdisk on modern UEFI/GPT systems"
+    },
+    {
+      "name": "smartmontools",
+      "version": "7.4",
+      "category": "disk",
+      "description": "S.M.A.R.T. monitoring — check drive health, predict failure",
+      "url": "https://www.smartmontools.org/",
+      "license": "GPL-2.0",
+      "package": "smartmontools",
+      "replaces": "HDD Scan, CrystalDiskInfo"
+    },
+    {
+      "name": "hdparm",
+      "version": "9.65",
+      "category": "disk",
+      "description": "Get and set hard disk parameters, benchmarking, ATA secure erase",
+      "url": "https://sourceforge.net/projects/hdparm/",
+      "license": "BSD",
+      "package": "hdparm",
+      "replaces": "HDD Scan"
+    },
+    {
+      "name": "badblocks",
+      "version": "1.47",
+      "category": "disk",
+      "description": "Surface scan to find and mark bad sectors on block devices",
+      "url": "https://e2fsprogs.sourceforge.net/",
+      "license": "GPL-2.0",
+      "package": "e2fsprogs",
+      "replaces": "HDDaReg, Victoria"
+    },
+    {
+      "name": "ntfs-3g",
+      "version": "2022.10.3",
+      "category": "disk",
+      "description": "Read/write NTFS volumes from Linux — mount Windows partitions",
+      "url": "https://github.com/tuxera/ntfs-3g",
+      "license": "GPL-2.0",
+      "package": "ntfs-3g",
+      "replaces": "N/A — unique Linux capability"
+    },
+    {
+      "name": "e2fsprogs",
+      "version": "1.47",
+      "category": "disk",
+      "description": "ext2/3/4 filesystem utilities — fsck, mkfs, tune2fs, debugfs",
+      "url": "https://e2fsprogs.sourceforge.net/",
+      "license": "GPL-2.0",
+      "package": "e2fsprogs",
+      "replaces": "N/A"
+    },
+    {
+      "name": "dosfstools",
+      "version": "4.2",
+      "category": "disk",
+      "description": "FAT filesystem utilities — mkfs.fat, fsck.fat",
+      "url": "https://github.com/dosfstools/dosfstools",
+      "license": "GPL-3.0",
+      "package": "dosfstools",
+      "replaces": "N/A"
+    },
+    {
+      "name": "chntpw",
+      "version": "140201",
+      "category": "security",
+      "description": "Offline Windows password reset and registry editor",
+      "url": "http://www.chntpw.com/",
+      "license": "GPL-2.0",
+      "package": "chntpw",
+      "replaces": "NT Password Editor, Offline NT Password & Registry Editor"
+    },
+    {
+      "name": "ophcrack",
+      "version": "3.8.0",
+      "category": "security",
+      "description": "Windows password cracker using rainbow tables (LM and NTLM hashes)",
+      "url": "https://ophcrack.sourceforge.io/",
+      "license": "GPL-2.0",
+      "package": "ophcrack",
+      "replaces": "N/A"
+    },
+    {
+      "name": "clamav",
+      "version": "1.3.0",
+      "category": "security",
+      "description": "Offline antivirus scanner — scan Windows partitions from Linux",
+      "url": "https://www.clamav.net/",
+      "license": "GPL-2.0",
+      "package": "clamav",
+      "replaces": "Malwarebytes, McAfee Stinger, Kaspersky Virus Removal"
+    },
+    {
+      "name": "chkrootkit",
+      "version": "0.58b",
+      "category": "security",
+      "description": "Locally checks for signs of a rootkit",
+      "url": "http://www.chkrootkit.org/",
+      "license": "BSD",
+      "package": "chkrootkit",
+      "replaces": "N/A"
+    },
+    {
+      "name": "rkhunter",
+      "version": "1.4.6",
+      "category": "security",
+      "description": "Rootkit Hunter — scans for rootkits, backdoors, and local exploits",
+      "url": "https://rkhunter.sourceforge.io/",
+      "license": "GPL-2.0",
+      "package": "rkhunter",
+      "replaces": "N/A"
+    },
+    {
+      "name": "grub-install",
+      "version": "2.12",
+      "category": "system",
+      "description": "Reinstall GRUB2 bootloader on any disk from a running rescue system",
+      "url": "https://www.gnu.org/software/grub/",
+      "license": "GPL-3.0",
+      "package": "grub",
+      "replaces": "BootICE, EasyBCD, Fixboot"
+    },
+    {
+      "name": "efibootmgr",
+      "version": "18",
+      "category": "system",
+      "description": "Manage UEFI boot entries — add, remove, reorder boot options",
+      "url": "https://github.com/rhboot/efibootmgr",
+      "license": "GPL-2.0",
+      "package": "efibootmgr",
+      "replaces": "BootICE (UEFI entry management)"
+    },
+    {
+      "name": "os-prober",
+      "version": "1.81",
+      "category": "system",
+      "description": "Detect operating systems installed on all partitions",
+      "url": "https://joeyh.name/code/os-prober/",
+      "license": "GPL-2.0",
+      "package": "os-prober",
+      "replaces": "N/A"
+    },
+    {
+      "name": "hwinfo",
+      "version": "23.2",
+      "category": "system",
+      "description": "Detailed hardware detection and information tool",
+      "url": "https://github.com/openSUSE/hwinfo",
+      "license": "GPL-2.0",
+      "package": "hwinfo",
+      "replaces": "CPU-Z, GPU-Z, HWiNFO"
+    },
+    {
+      "name": "inxi",
+      "version": "3.3.31",
+      "category": "system",
+      "description": "Full system information report (CPU, RAM, disks, GPU, network)",
+      "url": "https://github.com/smxi/inxi",
+      "license": "GPL-3.0",
+      "package": "inxi",
+      "replaces": "Speccy, SIW"
+    },
+    {
+      "name": "dmidecode",
+      "version": "3.5",
+      "category": "system",
+      "description": "Dump DMI/SMBIOS data — BIOS, motherboard, memory slots",
+      "url": "https://www.nongnu.org/dmidecode/",
+      "license": "GPL-2.0",
+      "package": "dmidecode",
+      "replaces": "CPU-Z (motherboard/memory)"
+    },
+    {
+      "name": "stress-ng",
+      "version": "0.17",
+      "category": "system",
+      "description": "Stress test CPU, memory, I/O — useful for stability testing",
+      "url": "https://github.com/ColinIanKing/stress-ng",
+      "license": "GPL-2.0",
+      "package": "stress-ng",
+      "replaces": "Prime95, FurMark"
+    },
+    {
+      "name": "memtester",
+      "version": "4.6.0",
+      "category": "system",
+      "description": "Userspace memory tester — tests RAM from within the rescue OS",
+      "url": "https://pyropus.ca./software/memtester/",
+      "license": "GPL-2.0",
+      "package": "memtester",
+      "replaces": "RAM test (supplement to Memtest86+)"
+    },
+    {
+      "name": "htop",
+      "version": "3.3.0",
+      "category": "system",
+      "description": "Interactive process viewer and system monitor",
+      "url": "https://htop.dev/",
+      "license": "GPL-2.0",
+      "package": "htop",
+      "replaces": "Task Manager"
+    },
+    {
+      "name": "btop",
+      "version": "1.3.0",
+      "category": "system",
+      "description": "Beautiful resource monitor — CPU, RAM, disk, network",
+      "url": "https://github.com/aristocratos/btop",
+      "license": "Apache-2.0",
+      "package": "btop",
+      "replaces": "Task Manager (enhanced)"
+    },
+    {
+      "name": "nmap",
+      "version": "7.95",
+      "category": "network",
+      "description": "Network scanner and security auditing tool",
+      "url": "https://nmap.org/",
+      "license": "GPL-2.0",
+      "package": "nmap",
+      "replaces": "LanScan, Angry IP Scanner"
+    },
+    {
+      "name": "wireshark",
+      "version": "4.2.0",
+      "category": "network",
+      "description": "Network protocol analyzer — capture and analyze packets",
+      "url": "https://www.wireshark.org/",
+      "license": "GPL-2.0",
+      "package": "wireshark",
+      "replaces": "N/A"
+    },
+    {
+      "name": "openssh",
+      "version": "9.7",
+      "category": "network",
+      "description": "SSH client and server — remote access to/from rescue environment",
+      "url": "https://www.openssh.com/",
+      "license": "BSD",
+      "package": "openssh",
+      "replaces": "PuTTY (client-side)"
+    },
+    {
+      "name": "rsync",
+      "version": "3.3.0",
+      "category": "network",
+      "description": "Fast file transfer and synchronization — local and remote",
+      "url": "https://rsync.samba.org/",
+      "license": "GPL-3.0",
+      "package": "rsync",
+      "replaces": "XCOPY, robocopy"
+    },
+    {
+      "name": "mc",
+      "version": "4.8.31",
+      "category": "utility",
+      "description": "Midnight Commander — dual-pane file manager (Norton Commander-style)",
+      "url": "https://midnight-commander.org/",
+      "license": "GPL-3.0",
+      "package": "mc",
+      "replaces": "Total Commander, Windows Explorer"
+    },
+    {
+      "name": "hexedit",
+      "version": "1.6",
+      "category": "utility",
+      "description": "Terminal hex editor — view and edit binary files",
+      "url": "https://github.com/pixel/hexedit",
+      "license": "GPL-2.0",
+      "package": "hexedit",
+      "replaces": "HxD, WinHex"
+    },
+    {
+      "name": "nano",
+      "version": "7.2",
+      "category": "utility",
+      "description": "Simple terminal text editor",
+      "url": "https://www.nano-editor.org/",
+      "license": "GPL-3.0",
+      "package": "nano",
+      "replaces": "Notepad"
+    },
+    {
+      "name": "vim",
+      "version": "9.1",
+      "category": "utility",
+      "description": "Advanced terminal text editor",
+      "url": "https://www.vim.org/",
+      "license": "Vim (GPL-compatible)",
+      "package": "vim",
+      "replaces": "Notepad++ (terminal equivalent)"
+    },
+    {
+      "name": "p7zip",
+      "version": "17.05",
+      "category": "utility",
+      "description": "7-Zip command-line — extract ZIP, 7z, RAR, TAR and more",
+      "url": "https://7-zip.org/",
+      "license": "LGPL-2.1",
+      "package": "p7zip",
+      "replaces": "7-Zip, WinRAR"
+    },
+    {
+      "name": "memtest86plus",
+      "version": "7.00",
+      "category": "system",
+      "description": "Standalone memory tester — boots natively (BIOS and UEFI), tests RAM before OS loads",
+      "url": "https://www.memtest.org/",
+      "license": "GPL-2.0",
+      "package": "N/A (standalone binary)",
+      "replaces": "Memtest86, RAM tester in old HBCD"
+    }
+  ]
+}

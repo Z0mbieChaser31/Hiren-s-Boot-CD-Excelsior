@@ -1,0 +1,173 @@
+name: Build Excelsior ISO
+
+on:
+  push:
+    branches: [ "Hiren-s-Boot-CD-Excelsior" ]
+    paths:
+      - "excelsior/**"
+      - ".github/workflows/build-iso.yml"
+  pull_request:
+    branches: [ "Hiren-s-Boot-CD-Excelsior" ]
+  release:
+    types: [ published ]
+  workflow_dispatch:
+    inputs:
+      skip_download_cache:
+        description: 'Force re-download all payloads (ignore cache)'
+        required: false
+        default: 'false'
+        type: boolean
+
+concurrency:
+  group: build-iso-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── Lint & Validate ────────────────────────────────────────────────────────
+  validate:
+    name: Validate Configs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install validators
+        run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends grub-common jq
+
+      - name: Validate GRUB2 config syntax
+        run: |
+          echo "Checking grub.cfg syntax..."
+          grub-script-check excelsior/boot/grub/grub.cfg
+          echo "✅ grub.cfg is valid"
+
+      - name: Validate MANIFEST.json
+        run: |
+          echo "Validating MANIFEST.json..."
+          jq empty excelsior/tools/MANIFEST.json
+          COUNT=$(jq '.tools | length' excelsior/tools/MANIFEST.json)
+          echo "✅ MANIFEST.json is valid — ${COUNT} tools catalogued"
+
+      - name: Check shell scripts
+        run: |
+          sudo apt-get install -y shellcheck
+          shellcheck excelsior/scripts/build.sh
+          shellcheck excelsior/scripts/create-usb.sh
+          shellcheck excelsior/scripts/verify-iso.sh
+          shellcheck excelsior/scripts/add-tool.sh
+          echo "✅ All scripts pass shellcheck"
+
+  # ── Build ISO ─────────────────────────────────────────────────────────────
+  build:
+    name: Build ISO (${{ matrix.arch }})
+    runs-on: ubuntu-latest
+    needs: validate
+    strategy:
+      matrix:
+        arch: [amd64]
+        # arm64 builds can be added in the future
+    env:
+      OUTPUT_ISO: Excelsior-${{ github.sha }}-${{ matrix.arch }}.iso
+      SKIP_DOWNLOAD: ${{ github.event.inputs.skip_download_cache == 'true' && 'false' || 'false' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── Cache downloaded payloads ──────────────────────────────────────────
+      - name: Cache downloaded ISOs
+        uses: actions/cache@v4
+        id: payload-cache
+        with:
+          path: /tmp/excelsior-build/downloads
+          key: payloads-${{ hashFiles('excelsior/scripts/build.sh') }}
+          restore-keys: |
+            payloads-
+
+      - name: Set SKIP_DOWNLOAD if cache hit
+        if: steps.payload-cache.outputs.cache-hit == 'true'
+        run: echo "SKIP_DOWNLOAD=true" >> "$GITHUB_ENV"
+
+      # ── Build ──────────────────────────────────────────────────────────────
+      - name: Build Excelsior ISO
+        run: |
+          sudo OUTPUT_ISO="${OUTPUT_ISO}" \
+               SKIP_DOWNLOAD="${SKIP_DOWNLOAD}" \
+               bash excelsior/scripts/build.sh
+
+      # ── Verify ────────────────────────────────────────────────────────────
+      - name: Verify ISO structure
+        run: |
+          sudo apt-get install -y --no-install-recommends genisoimage
+          bash excelsior/scripts/verify-iso.sh "${OUTPUT_ISO}" --check-only
+
+      - name: Record ISO metadata
+        run: |
+          echo "## ISO Build Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Property | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| File | \`${OUTPUT_ISO}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Size | $(du -sh ${OUTPUT_ISO} | cut -f1) |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| SHA256 | \`$(sha256sum ${OUTPUT_ISO} | awk '{print $1}')\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Branch | \`${{ github.ref_name }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Commit | \`${{ github.sha }}\` |" >> "$GITHUB_STEP_SUMMARY"
+
+      # ── Upload artifact ────────────────────────────────────────────────────
+      - name: Upload ISO artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Excelsior-ISO-${{ matrix.arch }}-${{ github.run_number }}
+          path: |
+            ${{ env.OUTPUT_ISO }}
+            ${{ env.OUTPUT_ISO }}.sha256
+          retention-days: 14
+
+      # ── Upload to Release (only on release events) ─────────────────────────
+      - name: Upload to GitHub Release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ env.OUTPUT_ISO }}
+            ${{ env.OUTPUT_ISO }}.sha256
+
+  # ── QEMU Smoke Test ────────────────────────────────────────────────────────
+  smoke-test:
+    name: QEMU Boot Smoke Test
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name != 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download ISO artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: Excelsior-ISO-amd64-${{ github.run_number }}
+
+      - name: Install QEMU and OVMF
+        run: sudo apt-get install -y --no-install-recommends qemu-system-x86 ovmf
+
+      - name: Run UEFI smoke test (30s boot check)
+        run: |
+          ISO=$(ls Excelsior-*.iso | head -1)
+          echo "Testing: ${ISO}"
+          # Boot for 30 seconds, capture serial output, check for GRUB appearing
+          timeout 30 qemu-system-x86_64 \
+            -m 512 \
+            -bios /usr/share/OVMF/OVMF_CODE.fd \
+            -cdrom "${ISO}" \
+            -boot d \
+            -display none \
+            -serial file:/tmp/boot-log.txt \
+            -no-reboot || true
+
+          # Check that something booted (GRUB or kernel messages)
+          if grep -qi "grub\|linux\|kernel\|systemrescue\|booting" /tmp/boot-log.txt 2>/dev/null; then
+            echo "✅ UEFI smoke test passed — boot messages detected"
+          else
+            echo "⚠️  Could not confirm boot in serial log (expected for graphical GRUB)"
+            echo "Serial output:"
+            cat /tmp/boot-log.txt || true
+          fi

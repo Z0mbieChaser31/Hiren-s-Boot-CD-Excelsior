@@ -1,0 +1,98 @@
+# =============================================================================
+# Hiren's Boot CD — Excelsior GRUB2 Theme
+# Dark, professional rescue-disk aesthetic
+# =============================================================================
+
+# Desktop background color
+desktop-color: "#0d0d1a"
+
+# Optional: background image (place excelsior-bg.png in this directory)
+# desktop-image: "excelsior-bg.png"
+
+# Title bar
+title-text: ""
+
+# Boot menu
++ boot_menu {
+    left   = 15%
+    top    = 20%
+    width  = 70%
+    height = 60%
+
+    item_font        = "DejaVu Sans Bold 14"
+    item_color       = "#c8d0e8"
+    selected_item_color    = "#ffffff"
+    selected_item_pixmap_style = "sel_*.png"
+
+    # Item background highlight
+    item_height     = 28
+    item_padding    = 4
+    item_spacing    = 4
+
+    scrollbar       = true
+    scrollbar_width = 8
+    scrollbar_thumb = "scrollbar_thumb.png"
+}
+
+# Information text (bottom bar)
++ label {
+    left   = 0
+    top    = 88%
+    width  = 100%
+    height = 6%
+    text   = "Hiren's Boot CD Excelsior | UEFI + Legacy BIOS | Use ↑↓ to navigate, Enter to boot"
+    font   = "DejaVu Sans 11"
+    color  = "#7080a0"
+    align  = "center"
+}
+
+# Version label (top right)
++ label {
+    left   = 75%
+    top    = 2%
+    width  = 25%
+    height = 5%
+    text   = "Excelsior 1.0"
+    font   = "DejaVu Sans Bold 12"
+    color  = "#6a5acd"
+    align  = "right"
+}
+
+# Title label (top left)
++ label {
+    left   = 2%
+    top    = 2%
+    width  = 60%
+    height = 5%
+    text   = "Hiren's Boot CD"
+    font   = "DejaVu Sans Bold 18"
+    color  = "#9b7cdb"
+    align  = "left"
+}
+
+# Subtitle
++ label {
+    left   = 2%
+    top    = 8%
+    width  = 70%
+    height = 5%
+    text   = "Modern Rescue Toolkit — Boot Menu"
+    font   = "DejaVu Sans 12"
+    color  = "#556080"
+    align  = "left"
+}
+
+# Progress bar
++ progress_bar {
+    id             = "__timeout__"
+    left           = 15%
+    top            = 82%
+    width          = 70%
+    height         = 10
+    show_text      = true
+    font           = "DejaVu Sans 10"
+    text_color     = "#8090b0"
+    fg_color       = "#6a5acd"
+    bg_color       = "#1a1a2e"
+    border_color   = "#2a2a4e"
+}
