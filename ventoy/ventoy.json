@@ -1,0 +1,163 @@
+{
+    "_comment": "Hiren's Boot CD Excelsior — Ventoy Configuration",
+    "_project": "https://github.com/HBCD/Hiren-s-Boot-CD-reborn",
+    "_version": "2.0.0",
+
+    "control": [
+        { "VTOY_DEFAULT_SEARCH_ROOT": "/ISOs" },
+        { "VTOY_MENU_TIMEOUT": "30" },
+        { "VTOY_FILE_FLT_EFI": "1" },
+        { "VTOY_SECONDARY_BOOT_MENU": "1" },
+        { "VTOY_TREE_VIEW_MENU_STYLE": "1" }
+    ],
+
+    "theme": {
+        "file": "/ventoy/themes/hbcd-excelsior/theme.txt",
+        "fonts": [
+            "/ventoy/themes/hbcd-excelsior/DejaVuSans.pf2",
+            "/ventoy/themes/hbcd-excelsior/DejaVuSans-Bold.pf2"
+        ],
+        "icons_dir": "/ventoy/themes/hbcd-excelsior/icons",
+        "ventoy_left": "5%",
+        "ventoy_top": "20%",
+        "ventoy_width": "90%",
+        "ventoy_color": "#1a9de0"
+    },
+
+    "menu_alias": [
+        {
+            "image": "/ISOs/Windows/HBCD_PE_x64.iso",
+            "alias": "⚕  Hiren's BootCD PE  —  Windows 11 PE • 100+ Repair Tools"
+        },
+        {
+            "image": "/ISOs/Windows/sergei_strelec.iso",
+            "alias": "🛠  Sergei Strelec WinPE  —  Advanced Windows Toolkit"
+        },
+        {
+            "image": "/ISOs/Windows/dart_pe.iso",
+            "alias": "🪟  Microsoft DaRT  —  Official Windows Diagnostics & Recovery"
+        },
+        {
+            "image": "/ISOs/Linux/systemrescue-latest.iso",
+            "alias": "🐧  SystemRescue  —  Linux • GParted • TestDisk • Network Tools"
+        },
+        {
+            "image": "/ISOs/Linux/rescuezilla-latest-amd64.iso",
+            "alias": "💾  Rescuezilla  —  Easy Disk Imaging & Cloning (GUI)"
+        },
+        {
+            "image": "/ISOs/Linux/clonezilla-live-latest-amd64.iso",
+            "alias": "🗂  Clonezilla  —  Professional Disk/Partition Cloning"
+        },
+        {
+            "image": "/ISOs/Linux/gparted-live-latest-amd64.iso",
+            "alias": "📀  GParted Live  —  Partition Editor"
+        },
+        {
+            "image": "/ISOs/Linux/ubuntu-latest-desktop-amd64.iso",
+            "alias": "🟠  Ubuntu Live  —  Full Linux Desktop • Best Hardware Support"
+        },
+        {
+            "image": "/ISOs/Linux/Fedora-Workstation-Live-x86_64-latest.iso",
+            "alias": "🎩  Fedora Live  —  Modern Linux • GNOME Desktop"
+        },
+        {
+            "image": "/ISOs/Linux/debian-live-latest-amd64-xfce.iso",
+            "alias": "🌀  Debian Live  —  Stable • Lightweight • Legacy Hardware Friendly"
+        },
+        {
+            "image": "/ISOs/Linux/KNOPPIX_latest.iso",
+            "alias": "🔵  KNOPPIX  —  Comprehensive Recovery • Legacy Hardware Expert"
+        },
+        {
+            "image": "/ISOs/Linux/pmagic-latest.iso",
+            "alias": "✨  Parted Magic  —  Pro Partitioning & Data Recovery (Paid)"
+        },
+        {
+            "image": "/ISOs/Diagnostics/memtest86plus.iso",
+            "alias": "🔬  MemTest86+  —  Open-Source RAM Diagnostic"
+        },
+        {
+            "image": "/ISOs/Diagnostics/memtest86-usb.iso",
+            "alias": "🔬  MemTest86  —  PassMark RAM Test • UEFI • Detailed Reports"
+        },
+        {
+            "image": "/ISOs/Diagnostics/hdat2.iso",
+            "alias": "💿  HDAT2  —  Hard Disk Diagnostic & Bad Sector Repair"
+        },
+        {
+            "image": "/ISOs/Security/tails-amd64-latest.iso",
+            "alias": "🧅  Tails OS  —  Anonymous Browsing • Tor • Zero Trace"
+        },
+        {
+            "image": "/ISOs/Security/kali-linux-latest-live-amd64.iso",
+            "alias": "🐉  Kali Linux  —  Penetration Testing • 600+ Security Tools"
+        },
+        {
+            "image": "/ISOs/Security/caine-latest.iso",
+            "alias": "🔍  CAINE  —  Digital Forensics • Read-Only Evidence Collection"
+        },
+        {
+            "image": "/ISOs/Security/deft-zero-latest.iso",
+            "alias": "🕵  DEFT Zero  —  Digital Evidence & Forensics Toolkit"
+        },
+        {
+            "image": "/ISOs/Network/netboot.xyz.iso",
+            "alias": "🌐  netboot.xyz  —  Boot Any OS Over the Internet"
+        },
+        {
+            "image": "/ISOs/Network/ipxe.iso",
+            "alias": "📡  iPXE  —  Advanced Network Boot Firmware"
+        },
+        {
+            "image": "/ISOs/Legacy/hbcd-15.2.iso",
+            "alias": "⏳  HBCD 15.2 Legacy  —  Original Hiren's Boot CD (DOS Tools)"
+        }
+    ],
+
+    "menu_class": [
+        {
+            "key": "Windows Repair & Recovery",
+            "type": "dir",
+            "path": "/ISOs/Windows",
+            "prefix": "WIN"
+        },
+        {
+            "key": "Linux Rescue Environments",
+            "type": "dir",
+            "path": "/ISOs/Linux",
+            "prefix": "LNX"
+        },
+        {
+            "key": "Hardware Diagnostics",
+            "type": "dir",
+            "path": "/ISOs/Diagnostics",
+            "prefix": "DIA"
+        },
+        {
+            "key": "Security & Forensics",
+            "type": "dir",
+            "path": "/ISOs/Security",
+            "prefix": "SEC"
+        },
+        {
+            "key": "Network Boot",
+            "type": "dir",
+            "path": "/ISOs/Network",
+            "prefix": "NET"
+        },
+        {
+            "key": "Legacy Tools",
+            "type": "dir",
+            "path": "/ISOs/Legacy",
+            "prefix": "LEG"
+        }
+    ],
+
+    "auto_install": [
+        {
+            "image": "/ISOs/Windows/HBCD_PE_x64.iso",
+            "template": "/ventoy/auto_install/hirens_pe.json"
+        }
+    ]
+}
