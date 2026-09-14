@@ -387,6 +387,13 @@ create_hybrid_iso() {
   # 1. Primary El Torito boot entry: ISOLINUX (Legacy BIOS CD/DVD + Ventoy Normal Mode)
   # 2. Isohybrid MBR: isohdpfx.bin (Legacy BIOS USB dd-to-flash drive)
   # 3. Secondary El Torito boot entry: FAT EFI image (UEFI 64-bit boot)
+  #
+  # WSL2 DrvFs workaround: libburn opens the output path as a pseudo block device.
+  # DrvFs (/mnt/c/...) denies that open() with EACCES.  Write to real Linux tmpfs
+  # first, then cp the finished ISO to the Windows destination.
+  local _tmpiso="/tmp/Excelsior-$$.iso"
+  log "  Writing ISO to Linux tmpfs first (WSL DrvFs workaround)..."
+
   xorriso -as mkisofs \
     -iso-level 3 \
     -full-iso9660-filenames \
@@ -400,8 +407,13 @@ create_hybrid_iso() {
     -boot-load-size 4 \
     -boot-info-table \
     "${efi_args[@]}" \
-    -output "${OUTPUT_ISO}" \
-    "${WORKDIR}/iso_root"
+    -output "${_tmpiso}" \
+    "${WORKDIR}/iso_root" \
+    || error "xorriso failed — see output above"
+
+  log "  Copying ISO from tmpfs to ${OUTPUT_ISO}..."
+  cp "${_tmpiso}" "${OUTPUT_ISO}"
+  rm -f "${_tmpiso}"
 
   success "ISO created: ${OUTPUT_ISO}"
   local size; size=$(du -sh "${OUTPUT_ISO}" | cut -f1)
