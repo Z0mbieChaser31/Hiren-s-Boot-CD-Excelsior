@@ -1,37 +1,33 @@
 # =============================================================================
 # Hiren's Boot CD — Excelsior GRUB2 Theme
 # Dark, professional rescue-disk aesthetic
+# Compatible with all VESA resolutions (640x480, 800x600, 1024x768+)
 # =============================================================================
 
 # Desktop background color
 desktop-color: "#0d0d1a"
-
-# Optional: background image (place excelsior-bg.png in this directory)
-# desktop-image: "excelsior-bg.png"
 
 # Title bar
 title-text: ""
 
 # Boot menu
 + boot_menu {
-    left   = 15%
-    top    = 20%
-    width  = 70%
-    height = 60%
+    left   = 10%
+    top    = 18%
+    width  = 80%
+    height = 64%
 
-    item_font        = "DejaVu Sans Bold 14"
-    item_color       = "#c8d0e8"
-    selected_item_color    = "#ffffff"
-    selected_item_pixmap_style = "sel_*.png"
+    item_font     = "DejaVu Sans Bold 14"
+    item_color    = "#b0c0e0"
+    selected_item_color = "#ffffff"
 
     # Item background highlight
-    item_height     = 28
-    item_padding    = 4
-    item_spacing    = 4
+    item_height   = 28
+    item_padding  = 4
+    item_spacing  = 4
 
     scrollbar       = true
     scrollbar_width = 8
-    scrollbar_thumb = "scrollbar_thumb.png"
 }
 
 # Information text (bottom bar)
@@ -39,8 +35,8 @@ title-text: ""
     left   = 0
     top    = 88%
     width  = 100%
-    height = 6%
-    text   = "Hiren's Boot CD Excelsior | UEFI + Legacy BIOS | Use ↑↓ to navigate, Enter to boot"
+    height = 5%
+    text   = "Hiren's Boot CD Excelsior | 64-bit UEFI & 32-bit Legacy BIOS | Use ↑↓ and Enter"
     font   = "DejaVu Sans 11"
     color  = "#7080a0"
     align  = "center"
@@ -48,11 +44,11 @@ title-text: ""
 
 # Version label (top right)
 + label {
-    left   = 75%
-    top    = 2%
-    width  = 25%
+    left   = 70%
+    top    = 3%
+    width  = 28%
     height = 5%
-    text   = "Excelsior 1.0"
+    text   = "Excelsior 2.0 (Dual-Arch)"
     font   = "DejaVu Sans Bold 12"
     color  = "#6a5acd"
     align  = "right"
@@ -60,11 +56,11 @@ title-text: ""
 
 # Title label (top left)
 + label {
-    left   = 2%
+    left   = 3%
     top    = 2%
     width  = 60%
-    height = 5%
-    text   = "Hiren's Boot CD"
+    height = 6%
+    text   = "Hiren's Boot CD Excelsior"
     font   = "DejaVu Sans Bold 18"
     color  = "#9b7cdb"
     align  = "left"
@@ -72,27 +68,28 @@ title-text: ""
 
 # Subtitle
 + label {
-    left   = 2%
-    top    = 8%
+    left   = 3%
+    top    = 9%
     width  = 70%
     height = 5%
-    text   = "Modern Rescue Toolkit — Boot Menu"
+    text   = "Universal Rescue Toolkit — 64-bit Modern & 32-bit Legacy"
     font   = "DejaVu Sans 12"
     color  = "#556080"
     align  = "left"
 }
 
-# Progress bar
+# Progress bar / Timeout indicator
 + progress_bar {
     id             = "__timeout__"
-    left           = 15%
-    top            = 82%
-    width          = 70%
-    height         = 10
+    left           = 10%
+    top            = 83%
+    width          = 80%
+    height         = 8
     show_text      = true
-    font           = "DejaVu Sans 10"
+    font           = "DejaVu Sans 11"
     text_color     = "#8090b0"
     fg_color       = "#6a5acd"
     bg_color       = "#1a1a2e"
     border_color   = "#2a2a4e"
 }
+

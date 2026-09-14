@@ -27,23 +27,25 @@ BLUE='\033[0;34m'; CYAN='\033[0;36m'; BOLD='\033[1m'; RESET='\033[0m'
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 OUTPUT_ISO="${OUTPUT_ISO:-${REPO_ROOT}/Excelsior.iso}"
-WORKDIR="${WORKDIR:-/tmp/excelsior-build}"
+# Default WORKDIR to Windows C: drive to avoid WSL /tmp size limits (~3-4 GB needed)
+WORKDIR="${WORKDIR:-/mnt/c/excelsior-build}"
 SKIP_DOWNLOAD="${SKIP_DOWNLOAD:-false}"
 WITH_GUI="${WITH_GUI:-true}"
 LABEL="EXCELSIOR"
 
 # ── Payload versions (update these to upgrade) ───────────────────────────────
-SYSRESCUE_VERSION="11.02"
+SYSRESCUE_VERSION="13.01"
 SYSRESCUE_URL="https://fastly-cdn.system-rescue.org/releases/${SYSRESCUE_VERSION}/systemrescue-${SYSRESCUE_VERSION}-amd64.iso"
 SYSRESCUE_ISO="${WORKDIR}/downloads/systemrescue-${SYSRESCUE_VERSION}-amd64.iso"
 
-GPARTED_VERSION="1.6.0-3"
-GPARTED_URL="https://downloads.sourceforge.net/gparted/gparted-live-${GPARTED_VERSION}-amd64.iso"
-GPARTED_ISO="${WORKDIR}/downloads/gparted-live-${GPARTED_VERSION}-amd64.iso"
+# 32-bit Legacy Rescue (for Vortex86, Atom, Pentium, and 512MB RAM machines)
+SYSRESCUE32_VERSION="5.3.2"
+SYSRESCUE32_URL="https://archive.org/download/systemrescuecd-x86-5.3.2/systemrescuecd-x86-5.3.2.iso"
+SYSRESCUE32_ISO="${WORKDIR}/downloads/systemrescuecd-x86-${SYSRESCUE32_VERSION}.iso"
 
-MEMTEST_VERSION="7.00"
-MEMTEST_URL="https://www.memtest.org/download/${MEMTEST_VERSION}/mt86plus_${MEMTEST_VERSION}.binaries.zip"
-MEMTEST_ZIP="${WORKDIR}/downloads/memtest86plus-${MEMTEST_VERSION}.zip"
+# Memtest86+ is now installed via apt (package: memtest86+) instead of
+# downloading a binary release — the upstream project no longer ships
+# pre-built binaries in GitHub releases as of v8.x.
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 log()     { echo -e "${BOLD}${BLUE}[BUILD]${RESET} $*"; }
@@ -124,6 +126,8 @@ prepare_dirs() {
   rm -rf "${WORKDIR}/iso_root"
   mkdir -p \
     "${WORKDIR}/iso_root/boot/grub/themes/excelsior" \
+    "${WORKDIR}/iso_root/boot/grub/themes/excelsior/fonts" \
+    "${WORKDIR}/iso_root/boot/grub/fonts" \
     "${WORKDIR}/iso_root/boot/isolinux" \
     "${WORKDIR}/iso_root/boot/memtest86" \
     "${WORKDIR}/iso_root/boot/hdt" \
@@ -155,187 +159,253 @@ copy_boot_configs() {
 
 install_isolinux_binaries() {
   log "Installing ISOLINUX binaries (legacy BIOS)..."
-  local syslinux_data
-  # Try common locations
-  for dir in /usr/lib/syslinux/bios /usr/lib/syslinux /usr/share/syslinux; do
-    if [[ -f "${dir}/isolinux.bin" ]]; then
-      syslinux_data="${dir}"; break
-    fi
+
+  # 1. isolinux.bin
+  local isolinux_bin=""
+  for f in /usr/lib/ISOLINUX/isolinux.bin /usr/lib/syslinux/bios/isolinux.bin /usr/lib/syslinux/isolinux.bin; do
+    [[ -f "$f" ]] && isolinux_bin="$f" && break
   done
-  if [[ -z "${syslinux_data:-}" ]]; then
-    # Also check for isolinux package path
-    for dir in /usr/lib/ISOLINUX /usr/lib/isolinux; do
-      if [[ -f "${dir}/isolinux.bin" ]]; then
-        syslinux_data="${dir}"; break
-      fi
-    done
+  [[ -n "${isolinux_bin}" ]] || error "Cannot find isolinux.bin"
+  cp "${isolinux_bin}" "${WORKDIR}/iso_root/boot/isolinux/"
+
+  # 2. Syslinux BIOS modules (.c32) including ldlinux.c32, vesamenu.c32, libcom32.c32, libutil.c32
+  local modules_dir=""
+  for d in /usr/lib/syslinux/modules/bios /usr/lib/syslinux/bios /usr/share/syslinux; do
+    [[ -d "$d" ]] && modules_dir="$d" && break
+  done
+  if [[ -n "${modules_dir}" ]]; then
+    cp -r "${modules_dir}"/*.c32 "${WORKDIR}/iso_root/boot/isolinux/" 2>/dev/null || true
   fi
-  [[ -n "${syslinux_data:-}" ]] || error "Cannot find isolinux.bin. Install 'isolinux' or 'syslinux' package."
 
-  cp "${syslinux_data}/isolinux.bin" "${WORKDIR}/iso_root/boot/isolinux/"
-  cp "${syslinux_data}/ldlinux.c32"  "${WORKDIR}/iso_root/boot/isolinux/" 2>/dev/null || true
-
-  # vesamenu and other modules
-  for mod in vesamenu.c32 libcom32.c32 libutil.c32 hdt.c32; do
-    find /usr/lib/syslinux /usr/share/syslinux -name "${mod}" 2>/dev/null | \
-      head -1 | xargs -I{} cp {} "${WORKDIR}/iso_root/boot/isolinux/" 2>/dev/null || true
-  done
-
-  success "ISOLINUX binaries installed"
+  success "ISOLINUX binaries and modules installed"
 }
 
 install_grub_efi() {
   log "Installing GRUB2 EFI bootloader (UEFI support)..."
-  grub-mkimage \
-    --format=x86_64-efi \
-    --output="${WORKDIR}/iso_root/EFI/BOOT/BOOTX64.EFI" \
-    --prefix=/boot/grub \
-    part_gpt part_msdos fat iso9660 udf ext2 ntfs \
-    all_video gfxterm gfxmenu png \
-    normal boot chain linux linuxefi loopback \
-    configfile search search_fs_uuid search_fs_file search_label \
-    echo read ls test true sleep \
-    2>/dev/null || true
 
-  # Copy GRUB EFI modules
-  local grub_efi_dir
+  # Generate to /tmp first (real Linux tmpfs) to avoid WSL /mnt/c/ write caching.
+  local _tmpefi="/tmp/BOOTX64-$$.EFI"
+
+  # Try grub-mkstandalone first — it auto-bundles all modules, no list needed
+  if command -v grub-mkstandalone &>/dev/null; then
+    grub-mkstandalone \
+      --format=x86_64-efi \
+      --output="${_tmpefi}" \
+      --locales="" \
+      --fonts="" \
+      2>/dev/null || true
+  fi
+
+  # Fallback: grub-mkimage with minimal safe module list
+  if [[ ! -s "${_tmpefi}" ]]; then
+    grub-mkimage \
+      --format=x86_64-efi \
+      --output="${_tmpefi}" \
+      --prefix=/boot/grub \
+      part_gpt part_msdos fat iso9660 normal boot chain \
+      configfile search search_label echo linux sleep \
+      2>/dev/null || true
+  fi
+
+  if [[ -s "${_tmpefi}" ]]; then
+    cp "${_tmpefi}" "${WORKDIR}/iso_root/EFI/BOOT/BOOTX64.EFI"
+    rm -f "${_tmpefi}"
+    success "GRUB2 EFI bootloader installed ($(du -sh "${WORKDIR}/iso_root/EFI/BOOT/BOOTX64.EFI" | cut -f1))"
+  else
+    rm -f "${_tmpefi}"
+    error "grub-mkimage/mkstandalone EFI failed — cannot build bootable ISO without BOOTX64.EFI"
+  fi
+
+  # Copy GRUB EFI modules into the ISO for runtime module loading
+  local grub_efi_dir=""
   for d in /usr/lib/grub/x86_64-efi /usr/share/grub/x86_64-efi; do
     [[ -d "$d" ]] && grub_efi_dir="$d" && break
   done
-  if [[ -n "${grub_efi_dir:-}" ]]; then
+  if [[ -n "${grub_efi_dir}" ]]; then
     mkdir -p "${WORKDIR}/iso_root/boot/grub/x86_64-efi"
     cp "${grub_efi_dir}"/*.mod "${WORKDIR}/iso_root/boot/grub/x86_64-efi/" 2>/dev/null || true
   fi
-
-  success "GRUB2 EFI bootloader installed"
 }
 
 install_grub_bios() {
   log "Installing GRUB2 BIOS bootloader..."
-  local grub_bios_dir
+  local grub_bios_dir=""
   for d in /usr/lib/grub/i386-pc /usr/share/grub/i386-pc; do
     [[ -d "$d" ]] && grub_bios_dir="$d" && break
   done
-  if [[ -n "${grub_bios_dir:-}" ]]; then
+  if [[ -n "${grub_bios_dir}" ]]; then
     mkdir -p "${WORKDIR}/iso_root/boot/grub/i386-pc"
     cp "${grub_bios_dir}"/*.img "${WORKDIR}/iso_root/boot/grub/i386-pc/" 2>/dev/null || true
     cp "${grub_bios_dir}"/*.mod "${WORKDIR}/iso_root/boot/grub/i386-pc/" 2>/dev/null || true
   fi
-  success "GRUB2 BIOS modules installed"
+
+  # Generate GRUB2 BIOS El Torito boot image in /tmp first (real Linux tmpfs),
+  # then copy to iso_root. Writing directly to /mnt/c/ via WSL can produce
+  # silent empty files due to 9p/DrvFs filesystem quirks.
+  log "Generating GRUB2 BIOS El Torito image..."
+  local _tmpimg
+  _tmpimg="/tmp/grub-eltorito-$$.img"
+  grub-mkimage \
+    --format=i386-pc-eltorito \
+    --output="${_tmpimg}" \
+    --prefix=/boot/grub \
+    biosdisk iso9660 part_gpt part_msdos fat ext2 ntfs \
+    normal configfile boot chain linux echo sleep search ls test \
+    2>/dev/null || true
+
+  if [[ -s "${_tmpimg}" ]]; then
+    cp "${_tmpimg}" "${WORKDIR}/iso_root/boot/grub/i386-pc/eltorito.img"
+    rm -f "${_tmpimg}"
+    success "GRUB2 BIOS El Torito image generated ($(du -sh "${WORKDIR}/iso_root/boot/grub/i386-pc/eltorito.img" | cut -f1))"
+  else
+    rm -f "${_tmpimg}"
+    warn "grub-mkimage BIOS failed — ISO will be UEFI-only (works on all modern hardware)"
+  fi
+
+  success "GRUB2 BIOS bootloader installed"
+}
+
+extract_sysrescue() {
+  log "Downloading and extracting SystemRescue 64-bit ${SYSRESCUE_VERSION}..."
+  download "${SYSRESCUE_URL}" "${SYSRESCUE_ISO}" "SystemRescue 64-bit ${SYSRESCUE_VERSION}"
+
+  # Extract using xorriso directly — works reliably without root/loop mount issues
+  log "Extracting SystemRescue 64-bit payload with xorriso..."
+  rm -rf "${WORKDIR}/iso_root/sysresccd" "${WORKDIR}/iso_root/sysrescue.d"
+  xorriso -osirrox on -indev "${SYSRESCUE_ISO}" \
+    -extract /sysresccd "${WORKDIR}/iso_root/sysresccd" \
+    -extract /sysrescue.d "${WORKDIR}/iso_root/sysrescue.d" \
+    2>/dev/null || error "Failed to extract SystemRescue 64-bit payload"
+
+  success "SystemRescue 64-bit extracted (${SYSRESCUE_VERSION})"
+}
+
+extract_sysrescue32() {
+  log "Downloading and extracting SystemRescue 32-bit Legacy (${SYSRESCUE32_VERSION})..."
+  download "${SYSRESCUE32_URL}" "${SYSRESCUE32_ISO}" "SystemRescue 32-bit Legacy ${SYSRESCUE32_VERSION}"
+
+  mkdir -p "${WORKDIR}/iso_root/boot/sysrcd32"
+  log "Extracting SystemRescue 32-bit payload with xorriso..."
+  xorriso -osirrox on -indev "${SYSRESCUE32_ISO}" \
+    -extract /isolinux/rescue32 "${WORKDIR}/iso_root/boot/sysrcd32/rescue32" \
+    -extract /isolinux/initram.igz "${WORKDIR}/iso_root/boot/sysrcd32/initram.igz" \
+    -extract /sysrcd.dat "${WORKDIR}/iso_root/sysrcd.dat" \
+    -extract /sysrcd.md5 "${WORKDIR}/iso_root/sysrcd.md5" \
+    2>/dev/null || error "Failed to extract SystemRescue 32-bit payload"
+
+  success "SystemRescue 32-bit Legacy extracted (${SYSRESCUE32_VERSION} — supports 32-bit CPUs & 512MB RAM)"
 }
 
 install_memtest() {
   log "Installing Memtest86+..."
-  download "${MEMTEST_URL}" "${MEMTEST_ZIP}" "Memtest86+ ${MEMTEST_VERSION}"
-  local memtest_dir="${WORKDIR}/memtest_extracted"
-  rm -rf "${memtest_dir}"
-  mkdir -p "${memtest_dir}"
-  unzip -q "${MEMTEST_ZIP}" -d "${memtest_dir}"
-  # Copy EFI and binary versions
-  find "${memtest_dir}" -name "*.efi" | head -1 | \
-    xargs -I{} cp {} "${WORKDIR}/iso_root/boot/memtest86/memtest.efi" 2>/dev/null || true
-  find "${memtest_dir}" -name "memtest.bin" | head -1 | \
-    xargs -I{} cp {} "${WORKDIR}/iso_root/boot/memtest86/memtest.bin" 2>/dev/null || true
-  find "${memtest_dir}" -name "memtest64.bin" | head -1 | \
-    xargs -I{} cp {} "${WORKDIR}/iso_root/boot/memtest86/memtest64.bin" 2>/dev/null || true
-  success "Memtest86+ installed"
+  mkdir -p "${WORKDIR}/iso_root/boot/memtest86"
+
+  # SystemRescue includes Memtest86+ v7.20 (supports both UEFI and BIOS)
+  local bundled="${WORKDIR}/iso_root/sysresccd/boot/memtest"
+  if [[ -f "${bundled}" ]]; then
+    cp "${bundled}" "${WORKDIR}/iso_root/boot/memtest86/memtest.bin"
+    cp "${bundled}" "${WORKDIR}/iso_root/boot/memtest86/memtest.efi"
+    success "Memtest86+ v7.20 installed (bundled with SystemRescue)"
+    return 0
+  fi
+
+  warn "Bundled Memtest86+ not found — skipping"
 }
 
-extract_sysrescue() {
-  log "Downloading and extracting SystemRescue ${SYSRESCUE_VERSION}..."
-  download "${SYSRESCUE_URL}" "${SYSRESCUE_ISO}" "SystemRescue ${SYSRESCUE_VERSION}"
-
-  local mnt="${WORKDIR}/mnt_sysrescue"
-  mkdir -p "${mnt}"
-
-  # Mount and extract the SystemRescue ISO
-  mount -o loop,ro "${SYSRESCUE_ISO}" "${mnt}" 2>/dev/null || \
-    error "Failed to mount ${SYSRESCUE_ISO}. Try running with sudo."
-
-  # Copy entire SystemRescue payload into iso_root/sysrescue/
-  rsync -a --exclude='EFI' --exclude='boot/grub' \
-        "${mnt}/" "${WORKDIR}/iso_root/sysrescue/"
-
-  umount "${mnt}"
-  success "SystemRescue extracted"
-}
-
-extract_gparted() {
-  log "Downloading and extracting GParted Live ${GPARTED_VERSION}..."
-  download "${GPARTED_URL}" "${GPARTED_ISO}" "GParted Live ${GPARTED_VERSION}"
-
-  local mnt="${WORKDIR}/mnt_gparted"
-  mkdir -p "${mnt}"
-  mount -o loop,ro "${GPARTED_ISO}" "${mnt}" 2>/dev/null || \
-    error "Failed to mount ${GPARTED_ISO}"
-
-  rsync -a --exclude='EFI' --exclude='boot/grub' --exclude='isolinux' \
-        "${mnt}/" "${WORKDIR}/iso_root/gparted/"
-
-  umount "${mnt}"
-  success "GParted Live extracted"
-}
+# GParted is included in SystemRescue's graphical desktop (Xfce).
+# No separate GParted Live download needed.
 
 grub_install_fonts() {
   log "Installing GRUB2 fonts..."
+  mkdir -p "${WORKDIR}/iso_root/boot/grub/fonts"
+  mkdir -p "${WORKDIR}/iso_root/boot/grub/themes/excelsior/fonts"
+
+  # 1. Install standard Unifont / unicode.pf2
+  if [[ -f /usr/share/grub/unicode.pf2 ]]; then
+    cp /usr/share/grub/unicode.pf2 "${WORKDIR}/iso_root/boot/grub/fonts/unicode.pf2"
+    cp /usr/share/grub/unicode.pf2 "${WORKDIR}/iso_root/boot/grub/themes/excelsior/fonts/unicode.pf2"
+  fi
+
+  # 2. Generate exact DejaVu fonts requested by theme.txt
   if command -v grub-mkfont &>/dev/null; then
-    mkdir -p "${WORKDIR}/iso_root/boot/grub/fonts"
-    # Try to find unicode.pf2
-    for f in /usr/share/grub/unicode.pf2 /boot/grub/fonts/unicode.pf2 \
-              /boot/grub2/fonts/unicode.pf2; do
-      if [[ -f "$f" ]]; then
-        cp "$f" "${WORKDIR}/iso_root/boot/grub/fonts/"
-        cp "$f" "${WORKDIR}/iso_root/boot/grub/themes/excelsior/fonts/"
-        success "GRUB font installed"
-        return 0
-      fi
-    done
-    # Generate it
-    if [[ -f /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf ]]; then
-      grub-mkfont -o "${WORKDIR}/iso_root/boot/grub/themes/excelsior/fonts/unicode.pf2" \
-        /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf
+    local bold_ttf="/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+    local regular_ttf="/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+
+    if [[ -f "$bold_ttf" ]]; then
+      grub-mkfont -s 14 -o "${WORKDIR}/iso_root/boot/grub/themes/excelsior/fonts/dejavu-14.pf2" "$bold_ttf" 2>/dev/null || true
+      grub-mkfont -s 18 -o "${WORKDIR}/iso_root/boot/grub/themes/excelsior/fonts/dejavu-18.pf2" "$bold_ttf" 2>/dev/null || true
     fi
+    if [[ -f "$regular_ttf" ]]; then
+      grub-mkfont -s 11 -o "${WORKDIR}/iso_root/boot/grub/themes/excelsior/fonts/dejavu-11.pf2" "$regular_ttf" 2>/dev/null || true
+      grub-mkfont -s 12 -o "${WORKDIR}/iso_root/boot/grub/themes/excelsior/fonts/dejavu-12.pf2" "$regular_ttf" 2>/dev/null || true
+    fi
+    success "GRUB fonts generated from DejaVu TTF"
+  else
+    warn "grub-mkfont not available — using unicode.pf2"
   fi
 }
 
 create_hybrid_iso() {
-  log "Creating hybrid ISO (UEFI + BIOS) with xorriso..."
+  log "Creating hybrid ISO (UEFI + BIOS El Torito + MBR) with xorriso..."
 
-  # The --grub2-mbr file is needed for BIOS/MBR hybrid support
-  local mbr_img="${WORKDIR}/iso_root/boot/grub/i386-pc/boot_hybrid.img"
-  [[ -f "${mbr_img}" ]] || mbr_img="/usr/lib/grub/i386-pc/boot_hybrid.img"
-  [[ -f "${mbr_img}" ]] || mbr_img=""
+  # Locate ISOLINUX isohybrid MBR
+  local isohdpfx=""
+  for f in /usr/lib/ISOLINUX/isohdpfx.bin /usr/lib/syslinux/bios/isohdpfx.bin /usr/lib/syslinux/isohdpfx.bin; do
+    [[ -f "$f" ]] && isohdpfx="$f" && break
+  done
 
-  local mbr_opt=()
-  [[ -n "${mbr_img}" ]] && mbr_opt=(--grub2-mbr "${mbr_img}")
+  local mbr_args=()
+  if [[ -n "${isohdpfx}" ]]; then
+    mbr_args=(-isohybrid-mbr "${isohdpfx}")
+    log "  ISOLINUX isohybrid MBR: ${isohdpfx}"
+  else
+    warn "isohdpfx.bin not found — using default MBR"
+  fi
 
+  # Build FAT EFI system partition image for UEFI boot
+  log "Creating FAT EFI system partition image..."
+  local efiboot_img="${WORKDIR}/iso_root/boot/grub/efiboot.img"
+  rm -f "${efiboot_img}"
+  if command -v mkfs.vfat &>/dev/null && command -v mcopy &>/dev/null; then
+    mkfs.vfat -C "${efiboot_img}" 8192 2>/dev/null
+    mmd -i "${efiboot_img}" ::/EFI ::/EFI/BOOT 2>/dev/null || true
+    mcopy -i "${efiboot_img}" "${WORKDIR}/iso_root/EFI/BOOT/BOOTX64.EFI" ::/EFI/BOOT/BOOTX64.EFI 2>/dev/null || true
+    success "FAT EFI image created (8MB ESP)"
+  fi
+
+  local efi_args=()
+  if [[ -s "${efiboot_img}" ]]; then
+    efi_args=(
+      -eltorito-alt-boot
+      -e boot/grub/efiboot.img
+      -no-emul-boot
+      -isohybrid-gpt-basdat
+    )
+  fi
+
+  # Build hybrid ISO:
+  # 1. Primary El Torito boot entry: ISOLINUX (Legacy BIOS CD/DVD + Ventoy Normal Mode)
+  # 2. Isohybrid MBR: isohdpfx.bin (Legacy BIOS USB dd-to-flash drive)
+  # 3. Secondary El Torito boot entry: FAT EFI image (UEFI 64-bit boot)
   xorriso -as mkisofs \
     -iso-level 3 \
     -full-iso9660-filenames \
     -volid "${LABEL}" \
     -appid "Hiren's Boot CD Excelsior" \
     -publisher "HBCD Excelsior Project" \
-    \
-    "${mbr_opt[@]}" \
-    \
-    -eltorito-boot boot/isolinux/isolinux.bin \
-    -eltorito-catalog boot/isolinux/boot.cat \
+    "${mbr_args[@]}" \
+    -b boot/isolinux/isolinux.bin \
+    -c boot/isolinux/boot.cat \
     -no-emul-boot \
     -boot-load-size 4 \
     -boot-info-table \
-    \
-    --efi-boot EFI/BOOT/BOOTX64.EFI \
-    -efi-boot-part \
-    --efi-boot-image \
-    \
-    -isohybrid-mbr /usr/lib/ISOLINUX/isohdpfx.bin \
-    \
+    "${efi_args[@]}" \
     -output "${OUTPUT_ISO}" \
     "${WORKDIR}/iso_root"
 
   success "ISO created: ${OUTPUT_ISO}"
   local size; size=$(du -sh "${OUTPUT_ISO}" | cut -f1)
-  log "  Size: ${size}"
+  log "  Size:  ${size}"
   log "  Label: ${LABEL}"
   sha256sum "${OUTPUT_ISO}" | tee "${OUTPUT_ISO}.sha256"
   success "SHA256 checksum saved: ${OUTPUT_ISO}.sha256"
@@ -375,9 +445,9 @@ main() {
   install_grub_efi
   install_grub_bios
   grub_install_fonts
-  install_memtest
   extract_sysrescue
-  extract_gparted
+  extract_sysrescue32
+  install_memtest
   create_hybrid_iso
 
   echo ""
